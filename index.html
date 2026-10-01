@@ -143,6 +143,9 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
 }
 html[lang="ko"] body{font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
 html[lang="ko"] h1{font-family:"Noto Serif KR",serif}
+.teambar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;border:1px dashed var(--gold);border-radius:10px;background:var(--gold-soft);font-size:13px}
+.teambar span{flex:1 1 260px}
+td.need input:disabled,td.prio select:disabled{cursor:default;opacity:1}
 </style>
 </head>
 <body>
@@ -179,6 +182,10 @@ html[lang="ko"] h1{font-family:"Noto Serif KR",serif}
     <div class="f"><label id="lb-prio" data-i18n="h_prio"></label><div class="ms" data-key="prio" aria-labelledby="lb-prio"></div></div>
     <button class="reset" id="reset" type="button" data-i18n="reset"></button>
   </section>
+  <div class="teambar" id="teamBar" hidden>
+    <span id="teamMsg"></span>
+    <button type="button" class="reset" id="dlState"></button>
+  </div>
   <p class="sync" id="syncStatus" role="status" hidden></p>
 
   <div class="tbl-wrap">
@@ -197,15 +204,15 @@ const STR = {
   zh:{title:"AFK Arena 功能清单",sub:"按截图画面位置归类，“版本”标明功能属于 Classic 还是 Companions。标红的 UNCONF 为未能核实的内容。",
       shown:"显示中",need:"已标记需要",all:"全部",h_region:"区域",h_cat:"分类",h_name:"功能",h_desc:"说明",h_need:"是否需要",
       ph_name:"搜索功能名",ph_desc:"搜索说明文字",reset:"清除筛选",empty:"没有符合条件的功能。",
-      note:"勾选、优先级、筛选、主题与语言只保存在本浏览器中。",
+      note:"勾选与优先级为团队共享数据（来自 state.json）；筛选、主题与语言只保存在本浏览器中。",
       ms_all:"全部",ms_n:"已选 {n} 项",ms_clear:"全部（清除此项）",h_ver:"版本",opt_classic:"Classic",opt_companions:"Companions",opt_yes:"已勾选",opt_no:"未勾选",aria_need:"需要：",h_prio:"优先级",p_high:"高",p_mid:"中",p_low:"低",p_none:"未设置",aria_prio:"优先级：",
       ed_edit:"编辑说明",ed_edit_region:"编辑区域",ed_edit_cat:"编辑分类",ed_edit_name:"编辑功能",ed_edit_desc:"编辑说明",ed_changed:"已修改",edited:"已修改",ed_save:"保存",ed_cancel:"取消",ed_restore:"恢复原文",ed_restore_confirm:"恢复为原始说明？当前修改会被丢弃。",
       ed_hint:"行首输入“- ”为项目符号，前面再空两格为二级；Ctrl/⌘+Enter 保存，Esc 取消。",
       st_shared:"区域、分类、功能、说明的修改暂存在共享数据中，所有能打开此页面的人都会看到。",st_saving:"保存中…",st_saved:"已保存。",
       st_local:"共享存储不可用：修改只保存在本浏览器。",st_readonly:"你对此页面只有查看权限，无法修改说明。",
       st_error:"保存失败，修改仍保留在编辑框中，请稍后重试。",st_quota:"共享数据已达容量上限，无法保存。"},
-  en:{"title": "AFK Arena Feature List", "shown": "shown", "need": "marked needed", "all": "total", "edited": "edited", "h_region": "Area", "h_cat": "Category", "h_name": "Feature", "h_desc": "Description", "h_need": "Needed", "h_ver": "Version", "h_prio": "Priority", "ph_name": "Search features", "ph_desc": "Search descriptions", "reset": "Clear filters", "empty": "No features match these filters.", "note": "Checkboxes, priorities, filters, theme and language are saved in this browser only.", "ms_all": "All", "ms_n": "{n} selected", "ms_clear": "All (clear this filter)", "opt_classic": "Classic", "opt_companions": "Companions", "opt_yes": "Checked", "opt_no": "Unchecked", "aria_need": "Needed: ", "p_high": "High", "p_mid": "Medium", "p_low": "Low", "p_none": "Not set", "aria_prio": "Priority: ", "ed_edit": "Edit description", "ed_edit_region": "Edit area", "ed_edit_cat": "Edit category", "ed_edit_name": "Edit feature", "ed_edit_desc": "Edit description", "ed_changed": "Edited", "ed_save": "Save", "ed_cancel": "Cancel", "ed_restore": "Restore original", "ed_restore_confirm": "Restore the original description? Your current changes will be discarded.", "ed_hint": "Start a line with “- ” for a bullet; indent two spaces for a sub-bullet. Ctrl/⌘+Enter to save, Esc to cancel.", "st_shared": "Edits to area, category, feature and description are staged in shared data and visible to everyone who can open this page.", "st_saving": "Saving…", "st_saved": "Saved.", "st_local": "Shared storage unavailable: edits are saved in this browser only.", "st_readonly": "You have view-only access to this page and can't edit it.", "st_error": "Save failed. Your changes are still in the editor; please try again.", "st_quota": "Shared data is full; can't save."},
-  ko:{"title": "AFK 아레나 기능 목록", "shown": "표시 중", "need": "필요 표시", "all": "전체", "edited": "수정됨", "h_region": "영역", "h_cat": "분류", "h_name": "기능", "h_desc": "설명", "h_need": "필요 여부", "h_ver": "버전", "h_prio": "우선순위", "ph_name": "기능명 검색", "ph_desc": "설명 검색", "reset": "필터 초기화", "empty": "조건에 맞는 기능이 없습니다.", "note": "체크, 우선순위, 필터, 테마, 언어는 이 브라우저에만 저장됩니다.", "ms_all": "전체", "ms_n": "{n}개 선택", "ms_clear": "전체 (이 필터 해제)", "opt_classic": "Classic", "opt_companions": "Companions", "opt_yes": "체크됨", "opt_no": "체크 안 됨", "aria_need": "필요: ", "p_high": "높음", "p_mid": "중간", "p_low": "낮음", "p_none": "미설정", "aria_prio": "우선순위: ", "ed_edit": "설명 편집", "ed_edit_region": "영역 편집", "ed_edit_cat": "분류 편집", "ed_edit_name": "기능 편집", "ed_edit_desc": "설명 편집", "ed_changed": "수정됨", "ed_save": "저장", "ed_cancel": "취소", "ed_restore": "원문 복원", "ed_restore_confirm": "원래 설명으로 복원할까요? 현재 수정 내용은 삭제됩니다.", "ed_hint": "줄 앞에 “- ”를 입력하면 글머리 기호, 앞에 공백 두 칸을 더하면 2단계입니다. Ctrl/⌘+Enter 저장, Esc 취소.", "st_shared": "영역·분류·기능·설명 수정 사항은 공유 데이터에 임시 저장되며, 이 페이지를 열 수 있는 모든 사람에게 보입니다.", "st_saving": "저장 중…", "st_saved": "저장되었습니다.", "st_local": "공유 저장소를 사용할 수 없습니다: 수정 사항은 이 브라우저에만 저장됩니다.", "st_readonly": "이 페이지는 보기 권한만 있어 수정할 수 없습니다.", "st_error": "저장에 실패했습니다. 수정 내용은 편집창에 남아 있으니 다시 시도해 주세요.", "st_quota": "공유 데이터 용량이 가득 차 저장할 수 없습니다."}
+  en:{"title": "AFK Arena Feature List", "shown": "shown", "need": "marked needed", "all": "total", "edited": "edited", "h_region": "Area", "h_cat": "Category", "h_name": "Feature", "h_desc": "Description", "h_need": "Needed", "h_ver": "Version", "h_prio": "Priority", "ph_name": "Search features", "ph_desc": "Search descriptions", "reset": "Clear filters", "empty": "No features match these filters.", "note": "Checkboxes and priorities are shared team data (from state.json); filters, theme and language are saved in this browser only.", "ms_all": "All", "ms_n": "{n} selected", "ms_clear": "All (clear this filter)", "opt_classic": "Classic", "opt_companions": "Companions", "opt_yes": "Checked", "opt_no": "Unchecked", "aria_need": "Needed: ", "p_high": "High", "p_mid": "Medium", "p_low": "Low", "p_none": "Not set", "aria_prio": "Priority: ", "ed_edit": "Edit description", "ed_edit_region": "Edit area", "ed_edit_cat": "Edit category", "ed_edit_name": "Edit feature", "ed_edit_desc": "Edit description", "ed_changed": "Edited", "ed_save": "Save", "ed_cancel": "Cancel", "ed_restore": "Restore original", "ed_restore_confirm": "Restore the original description? Your current changes will be discarded.", "ed_hint": "Start a line with “- ” for a bullet; indent two spaces for a sub-bullet. Ctrl/⌘+Enter to save, Esc to cancel.", "st_shared": "Edits to area, category, feature and description are staged in shared data and visible to everyone who can open this page.", "st_saving": "Saving…", "st_saved": "Saved.", "st_local": "Shared storage unavailable: edits are saved in this browser only.", "st_readonly": "You have view-only access to this page and can't edit it.", "st_error": "Save failed. Your changes are still in the editor; please try again.", "st_quota": "Shared data is full; can't save."},
+  ko:{"title": "AFK 아레나 기능 목록", "shown": "표시 중", "need": "필요 표시", "all": "전체", "edited": "수정됨", "h_region": "영역", "h_cat": "분류", "h_name": "기능", "h_desc": "설명", "h_need": "필요 여부", "h_ver": "버전", "h_prio": "우선순위", "ph_name": "기능명 검색", "ph_desc": "설명 검색", "reset": "필터 초기화", "empty": "조건에 맞는 기능이 없습니다.", "note": "체크와 우선순위는 팀 공유 데이터(state.json)이며, 필터·테마·언어는 이 브라우저에만 저장됩니다.", "ms_all": "전체", "ms_n": "{n}개 선택", "ms_clear": "전체 (이 필터 해제)", "opt_classic": "Classic", "opt_companions": "Companions", "opt_yes": "체크됨", "opt_no": "체크 안 됨", "aria_need": "필요: ", "p_high": "높음", "p_mid": "중간", "p_low": "낮음", "p_none": "미설정", "aria_prio": "우선순위: ", "ed_edit": "설명 편집", "ed_edit_region": "영역 편집", "ed_edit_cat": "분류 편집", "ed_edit_name": "기능 편집", "ed_edit_desc": "설명 편집", "ed_changed": "수정됨", "ed_save": "저장", "ed_cancel": "취소", "ed_restore": "원문 복원", "ed_restore_confirm": "원래 설명으로 복원할까요? 현재 수정 내용은 삭제됩니다.", "ed_hint": "줄 앞에 “- ”를 입력하면 글머리 기호, 앞에 공백 두 칸을 더하면 2단계입니다. Ctrl/⌘+Enter 저장, Esc 취소.", "st_shared": "영역·분류·기능·설명 수정 사항은 공유 데이터에 임시 저장되며, 이 페이지를 열 수 있는 모든 사람에게 보입니다.", "st_saving": "저장 중…", "st_saved": "저장되었습니다.", "st_local": "공유 저장소를 사용할 수 없습니다: 수정 사항은 이 브라우저에만 저장됩니다.", "st_readonly": "이 페이지는 보기 권한만 있어 수정할 수 없습니다.", "st_error": "저장에 실패했습니다. 수정 내용은 편집창에 남아 있으니 다시 시도해 주세요.", "st_quota": "공유 데이터 용량이 가득 차 저장할 수 없습니다."}
 };
 const t = k => (STR[state.lang] && STR[state.lang][k]) ?? STR.zh[k];
 
@@ -393,7 +400,7 @@ try{
   const raw = JSON.parse(localStorage.getItem(OV_KEY)||"{}")||{};
   for(const k in raw) localOv[k] = typeof raw[k]==="string" ? {desc:raw[k]} : normOv(raw[k]);
 }catch(e){}
-let db = null, dbState = "local", readOnly = true;   // static snapshot for GitHub Pages / Confluence
+let db = null, dbState = "local", readOnly = true;   // static snapshot
 let editing = null;                 // {id, field, draft}
 const ovOf = r => (dbState==="shared" ? dbOverrides[r.id] : localOv[r.id]) || {};
 function base(r){
@@ -474,9 +481,9 @@ function render(){
       '<td class="ver">'+r.ver.map(v=>'<span class="vtag v-'+v+'">'+esc(t("opt_"+v))+'</span>').join("")+'</td>'+
       '<td class="name edc">'+(isEd(r,"name") ? editorCell(r,"name") : hl(e.name, state.qName.trim())+mark("name")+edBtn(r,"name"))+'</td>'+
       '<td class="desc edc">'+(isEd(r,"desc") ? editorCell(r,"desc") : fmt(e.desc, state.qDesc.trim())+(e.desc!==r.desc?'<span class="edited-dot desc-dot" title="'+esc(t("ed_changed"))+'"></span>':'')+edBtn(r,"desc"))+'</td>'+
-      '<td class="need"><input type="checkbox" data-id="'+r.id+'" aria-label="'+esc(t("aria_need")+e.name)+'"'+(c?" checked":"")+'></td>'+
+      '<td class="need"><input type="checkbox" data-id="'+r.id+'" aria-label="'+esc(t("aria_need")+e.name)+'"'+(c?" checked":"")+(TEAM_LOCK?" disabled":"")+'></td>'+
       (()=>{const pv=state.prioMap[r.id]||"none";
-        return '<td class="prio"><select data-prio="'+r.id+'" class="p-'+pv+'" aria-label="'+esc(t("aria_prio")+e.name)+'">'+
+        return '<td class="prio"><select data-prio="'+r.id+'"'+(TEAM_LOCK?' disabled':'')+' class="p-'+pv+'" aria-label="'+esc(t("aria_prio")+e.name)+'">'+
           PRIO_OPTS.map(v=>'<option value="'+v+'"'+(v===pv?" selected":"")+'>'+esc(t("p_"+v))+'</option>').join("")+'</select></td>';})()+
       '</tr>';
   }).join("");
@@ -600,7 +607,7 @@ function applyTheme(){
 }
 document.getElementById("langSeg").addEventListener("click", e=>{
   const l = e.target.dataset && e.target.dataset.lang; if(!l) return;
-  state.lang = l; editing = null; applyLang(); render(); syncMS(); save();
+  state.lang = l; editing = null; applyLang(); render(); syncMS(); save(); applyTeamBar();
 });
 document.getElementById("themeSeg").addEventListener("click", e=>{
   const th = e.target.dataset && e.target.dataset.themeBtn; if(!th) return;
@@ -638,12 +645,50 @@ function fitTitleInner(){
 window.addEventListener("resize", fitTitle);
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitle);
 
+/* ---------- team state (state.json) ---------- */
+const EDIT_MODE = new URLSearchParams(location.search).get("edit") === "1";
+const TEAM_LOCK = !EDIT_MODE;
+const TEAM_STR = {
+  zh:{msg:"编辑模式：修改勾选和优先级后，下载 state.json 并上传到 GitHub 仓库覆盖原文件，团队成员刷新后即可看到。", dl:"下载 state.json"},
+  en:{msg:"Edit mode: after changing checkboxes and priorities, download state.json and upload it to the GitHub repo to replace the old file; teammates see it after a refresh.", dl:"Download state.json"},
+  ko:{msg:"편집 모드: 체크와 우선순위를 변경한 뒤 state.json을 다운로드하여 GitHub 저장소의 기존 파일을 덮어쓰면, 팀원이 새로고침 후 볼 수 있습니다.", dl:"state.json 다운로드"}
+};
+function applyTeamBar(){
+  const bar = document.getElementById("teamBar"); if(!bar) return;
+  bar.hidden = !EDIT_MODE;
+  const L = TEAM_STR[state.lang] || TEAM_STR.zh;
+  document.getElementById("teamMsg").textContent = L.msg;
+  document.getElementById("dlState").textContent = L.dl;
+}
+async function loadTeamState(){
+  try{
+    const res = await fetch("state.json", {cache:"no-store"});
+    if(!res.ok) return;
+    const team = await res.json();
+    if(EDIT_MODE && state._editDraft) return;             // keep an unfinished local draft
+    state.checked = Array.isArray(team.checked) ? team.checked.map(Number) : [];
+    state.prioMap = (team.prio && typeof team.prio==="object") ? team.prio : {};
+    render();
+  }catch(e){}
+}
+document.getElementById("dlState").addEventListener("click", ()=>{
+  const data = {checked: state.checked.slice().sort((a,b)=>a-b), prio: state.prioMap, savedAt: new Date().toISOString()};
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "state.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  state._editDraft = false; save();
+});
+tbody.addEventListener("change", e=>{ if(EDIT_MODE && (e.target.dataset.id || e.target.dataset.prio)){ state._editDraft = true; save(); } });
+
 /* ---------- init ---------- */
 load();
+if(!EDIT_MODE){ state.checked = []; state.prioMap = {}; }
 applyTheme(); applyLang();
 document.querySelectorAll(".ms").forEach(buildMS);
 qName.value = state.qName; qDesc.value = state.qDesc;
-syncMS(); render(); fitTitle();
+syncMS(); render(); fitTitle(); applyTeamBar(); loadTeamState();
 
 /* ---------- shared storage bootstrap ---------- */
 const dbReady = (async ()=>{
